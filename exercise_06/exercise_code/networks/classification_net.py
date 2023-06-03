@@ -198,8 +198,23 @@ class MyOwnNetwork(ClassificationNet):
         ########################################################################
         # TODO:  Your initialization here                                      #
         ########################################################################
+        self.activation = activation()
+        self.reg_strength = reg
 
+        self.cache = None
 
+        self.memory = 0
+        self.memory_forward = 0
+        self.memory_backward = 0
+        self.num_operation = 0
+
+        # Initialize random gaussian weights for all layers and zero bias
+        self.num_layer = num_layer
+        self.std = std
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_classes = num_classes
+        self.reset_weights()
         pass
 
         ########################################################################
@@ -211,7 +226,30 @@ class MyOwnNetwork(ClassificationNet):
         ########################################################################
         # TODO:  Your forward here                                             #
         ########################################################################
+        self.cache = {}
+        self.reg = {}
+        X = X.reshape(X.shape[0], -1)
+        # Unpack variables from the params dictionary
+        for i in range(self.num_layer - 1):
+            W, b = self.params['W' + str(i + 1)], self.params['b' + str(i + 1)]
 
+            # Forward i_th layer
+            X, cache_affine = affine_forward(X, W, b)
+            self.cache["affine" + str(i + 1)] = cache_affine
+
+            # Activation function
+            X, cache_sigmoid = self.activation.forward(X)
+            self.cache["sigmoid" + str(i + 1)] = cache_sigmoid
+
+            # Store the reg for the current W
+            self.reg['W' + str(i + 1)] = np.sum(W ** 2) * self.reg_strength
+
+        # last layer contains no activation functions
+        W, b = self.params['W' + str(self.num_layer)],\
+               self.params['b' + str(self.num_layer)]
+        out, cache_affine = affine_forward(X, W, b)
+        self.cache["affine" + str(self.num_layer)] = cache_affine
+        self.reg['W' + str(self.num_layer)] = np.sum(W ** 2) * self.reg_strength
 
         pass
 
@@ -225,7 +263,30 @@ class MyOwnNetwork(ClassificationNet):
         ########################################################################
         # TODO:  Your backward here                                            #
         ########################################################################
+        cache_affine = self.cache['affine' + str(self.num_layer)]
+        dh, dW, db = affine_backward(dy, cache_affine)
+        grads['W' + str(self.num_layer)] = \
+            dW + 2 * self.reg_strength * self.params['W' + str(self.num_layer)]
+        grads['b' + str(self.num_layer)] = db
 
+        # The rest sandwich layers
+        for i in range(self.num_layer - 2, -1, -1):
+            # Unpack cache
+            cache_sigmoid = self.cache['sigmoid' + str(i + 1)]
+            cache_affine = self.cache['affine' + str(i + 1)]
+
+            # Activation backward
+            dh = self.activation.backward(dh, cache_sigmoid)
+
+            # Affine backward
+            dh, dW, db = affine_backward(dh, cache_affine)
+
+            # Refresh the gradients
+            grads['W' + str(i + 1)] = dW + 2 * self.reg_strength * \
+                                           self.params['W' + str(i + 1)]
+            grads['b' + str(i + 1)] = db
+
+    
 
         pass
 

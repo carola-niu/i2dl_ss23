@@ -121,7 +121,8 @@ class LeakyRelu:
         # TODO:                                                                #
         # Implement the forward pass of LeakyRelu activation function          #
         ########################################################################
-
+        outputs=np.maximum(self.slope*x,x)
+        cache=outputs
         pass
 
         ########################################################################
@@ -134,11 +135,14 @@ class LeakyRelu:
         :return: dx: the gradient w.r.t. input X, of the same shape as X
         """
         dx = None
+        dx=cache
         ########################################################################
         # TODO:                                                                #
         # Implement the backward pass of LeakyRelu activation function         #
         ########################################################################
-
+        dx[cache>0]=1
+        dx[cache<=0]=self.slope
+        dx*=dout
         pass
 
         ########################################################################
@@ -164,7 +168,8 @@ class Tanh:
         # TODO:                                                                #
         # Implement the forward pass of Tanh activation function               #
         ########################################################################
-
+        outputs=np.tanh(x)
+        cache=outputs
         pass
 
         ########################################################################
@@ -181,7 +186,7 @@ class Tanh:
         # TODO:                                                                #
         # Implement the backward pass of Tanh activation function              #
         ########################################################################
-
+        dx=dout*(1-np.square(cache))
         pass
 
         ########################################################################
