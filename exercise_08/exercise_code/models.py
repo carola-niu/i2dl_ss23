@@ -228,7 +228,6 @@ class Classifier(nn.Module):
             nn.Linear(self.encoder.latent_dim,self.hparams["n_hidden_cl"]),
             nn.LeakyReLU(),
             nn.Linear(self.hparams["n_hidden_cl"],10)
-            
         )
         pass
         
