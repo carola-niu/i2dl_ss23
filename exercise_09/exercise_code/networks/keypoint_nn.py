@@ -5,8 +5,8 @@ import torch.nn as nn
 import pytorch_lightning as pl
 
 # TODO: Choose from either model and uncomment that line
-class KeypointModel(nn.Module):
-# class KeypointModel(pl.LightningModule):
+#class KeypointModel(nn.Module):
+class KeypointModel(pl.LightningModule):
     """Facial keypoint detection model"""
     def __init__(self, hparams):
         """
@@ -18,8 +18,8 @@ class KeypointModel(nn.Module):
             by switching the class name line.
         """
         super().__init__()
-        self.hparams = hparams
-        # self.save_hyperparameters(hparams) # uncomment when using pl.LightningModule
+        #self.hparams = hparams
+        self.save_hyperparameters(hparams) # uncomment when using pl.LightningModule
         ########################################################################
         # TODO: Define all the layers of your CNN, the only requirements are:  #
         # 1. The network takes in a batch of images of shape (Nx1x96x96)       #
@@ -37,7 +37,34 @@ class KeypointModel(nn.Module):
         # You're going probably try different architecutres, and that will     #
         # allow you to be quick and flexible.                                  #
         ########################################################################
-        
+        self.cnn=nn.Sequential(
+            nn.Conv2d(1,self.hparams["num_filters"],self.hparams["kernel_size"],self.hparams["stride"],self.hparams["padding"]),
+            nn.ReLU(),
+            nn.MaxPool2d(2,2),
+            nn.Dropout(p=0.2),
+            nn.Conv2d(self.hparams["num_filters"],self.hparams["num_filters"]*2,self.hparams["kernel_size"],self.hparams["stride"],self.hparams["padding"]),
+            nn.ReLU(),
+            nn.MaxPool2d(2,2),
+            nn.Dropout(p=0.2),
+            nn.Conv2d(self.hparams["num_filters"]*2,self.hparams["num_filters"]*4,self.hparams["kernel_size"],self.hparams["stride"],self.hparams["padding"]),
+            nn.ReLU(),
+            nn.MaxPool2d(2,2),
+            nn.Dropout(p=0.2),
+            nn.Conv2d(self.hparams["num_filters"]*4,self.hparams["num_filters"]*8,self.hparams["kernel_size"],self.hparams["stride"],self.hparams["padding"]),
+            nn.ReLU(),
+            nn.MaxPool2d(2,2),
+            nn.Dropout(p=0.2),
+            nn.ReLU()
+           
+        )
+
+        self.fc=nn.Sequential(
+            nn.Linear(256*6*6,256),#every maxpooling layer reduces the size by 2, and the initial value is 96
+            nn.ReLU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(256,30),
+            nn.LeakyReLU()
+        )
 
         pass
 
@@ -56,8 +83,9 @@ class KeypointModel(nn.Module):
         # corresponding predicted keypoints.                                   #
         # NOTE: what is the required output size?                              #
         ########################################################################
-
-
+        x=self.cnn(x)
+        x=x.view(-1,256*6*6)
+        x=self.fc(x)
         pass
 
         ########################################################################
